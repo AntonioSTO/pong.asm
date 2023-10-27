@@ -242,16 +242,30 @@ check_com:
     je PADDLE_DOWN
 
     cmp al,50h ;'P'
-    je speed_up
+    je spd2
     cmp al,70h ;'p'
-    je speed_up
+    je spd2
 
     cmp al,4Dh ;'M'
     je spd
     cmp al,6Dh ;'m'
     je spd
 
+    cmp al,53h ;'S'
+    je sair
+    cmp al,73h ;'s'
+    je sair
     jmp volta
+
+sair:
+    mov ah,0 ; set video mode
+    mov al,[modo_anterior] ; recupera o modo anterior
+    int 10h
+    mov ax,4c00h
+    int 21h
+
+spd2:
+    jmp speed_up
 
 spd:
     jmp speed_down
