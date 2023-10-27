@@ -35,13 +35,13 @@ segment code
     mov     dl,1 			;coluna 0-79
 	mov	    byte[cor],branco
 
-escreve1:
+show_title:
 	call    cursor
-    mov     al,[bx+mens1]
+    mov     al,[bx+title]
 	call    caracter
     inc     bx	                ;proximo caracter
 	inc 	dl	                ;avanca a coluna
-    loop    escreve1
+    loop    show_title
 
     mov     cx,56			;numero de caracteres
     mov     bx,0
@@ -49,13 +49,14 @@ escreve1:
     mov     dl,1 			;coluna 0-79
 	mov	   byte[cor],branco
 
-escreve2:
+show_stats:
 	call    cursor
-    mov     al,[bx+mens2]
+    mov     al,[bx+stats]
 	call    caracter
     inc     bx	                ;proximo caracter
 	inc  	dl	                ;avanca a coluna
-    loop    escreve2
+    loop    show_stats
+    
 
 ;desenhar retas
 
@@ -130,7 +131,10 @@ volta:
     push        ax
     call    full_circle
 
-    call    delay
+    mov ax, 100 ; Por exemplo, 1000 ms (1 segundo).
+    mov ah, 86h
+    int 15h
+
     pop ax
     pop ax
     pop ax
@@ -147,11 +151,11 @@ volta:
     pop ax
 
     mov     byte[cor],branco_intenso    ;barra
-    mov     ax, 625
+    mov     ax, word[x_barra]
     push        ax
     mov     ax, word[baixo_barra]
     push        ax
-    mov     ax, 625
+    mov     ax, word[x_barra]
     push        ax
     mov     ax, word[topo_barra]
     push        ax
@@ -164,13 +168,13 @@ volta:
     add di, word[vy]
 
     
-    cmp     si, 625
+    cmp     si, 624
     jge     colisao_direita     
 
     cmp     di, 16
     jle     colisao_baixo
 
-    cmp     si, 10
+    cmp     si, 16
     jle     colisao_esquerda
 
     cmp     di, 415
@@ -179,16 +183,17 @@ volta:
     mov ah,01h
 	int 16h
 	jnz check_com
-
     call colisao_barra
+
 loop volta
 
 jmp_boost2:
     jmp volta
 
 colisao_barra:
-    cmp si, 615
-    jne jmp_boost2
+
+    cmp si, 590
+    jl jmp_boost2
 
     cmp di,word[topo_barra]
     jg jmp_boost2
@@ -197,11 +202,15 @@ colisao_barra:
     jl jmp_boost2
 
     neg word[vx]
+    add word[pontos_jogador],1 
+    call update_texto_pontos_jogador
+    
     jmp volta
 
-
 colisao_direita:
-    neg word[vx]  
+    neg word[vx]
+    add word[pontos_computador],1
+    call update_texto_pontos_computador  
     jmp volta   
 
 colisao_cima:
@@ -253,11 +262,11 @@ PADDLE_UP:
     jge jmp_boost
 
     mov     byte[cor],preto    ;apaga barra
-    mov     ax, 625
+    mov     ax, word[x_barra]
     push        ax
     mov     ax, word[baixo_barra]
     push        ax
-    mov     ax, 625
+    mov     ax, word[x_barra]
     push        ax
     mov     ax, word[topo_barra]
     push        ax
@@ -277,11 +286,11 @@ PADDLE_DOWN:
     jle jmp_boost
 
     mov     byte[cor],preto   ;apaga barra
-    mov     ax, 625
+    mov     ax, word[x_barra]
     push        ax
     mov     ax, word[baixo_barra]
     push        ax
-    mov     ax, 625
+    mov     ax, word[x_barra]
     push        ax
     mov     ax, word[topo_barra]
     push        ax
@@ -300,10 +309,10 @@ jmp_boost:
 
 speed_up:
 
-    cmp word[vel_display], 3
+    cmp byte[vel_display], 3
     je  jmp_boost
 
-    add word[vel_display], 1
+    add byte[vel_display], 1
     push ax
 
     mov ax, 2
@@ -316,31 +325,111 @@ speed_up:
 
     pop ax
 
+    call update_veldisp
+
     jmp volta
 
 speed_down:
 
-    cmp word[vel_display], 1
+    cmp byte[vel_display], 1
     je  jmp_boost
 
-    sub word[vel_display], 1
+    sub byte[vel_display], 1
     push ax
-    push bx
 
-    mov ax, 2
-    mov bx, word[vx]
-    div bx
-    mov word[vx],ax
+    mov ax, [vx]     ; Carrega o valor de vx em ax
+    sar ax, 1        ; Divide ax por 2 (shift right)
+    mov [vx], ax     ; Armazena o resultado de volta em vx
 
-    mov ax, 2
-    mov bx, word[vy]
-    div bx
-    mov word[vy],ax
+    mov ax, [vy]     ; Carrega o valor de vy em ax
+    sar ax, 1        ; Divide ax por 2 (shift right)
+    mov [vy], ax     ; Armazena o resultado de volta em vy
 
-    pop bx
     pop ax
 
+    call update_veldisp
+
     jmp volta
+
+update_texto_pontos_jogador:
+    xor ax,ax
+    mov al,[pontos_jogador] 
+    
+    add al,30h                       
+    mov [texto_pontos_jogador],al
+
+    mov     cx,1			;numero de caracteres
+    mov     bx,0
+    mov     dh,2			;linha 0-29
+    mov     dl,18 			;coluna 0-79
+	mov	   byte[cor],rosa
+
+    call pts_jogador
+    jmp volta
+    
+
+pts_jogador:
+	call    cursor
+    mov     al,[bx+texto_pontos_jogador]
+	call    caracter
+    dec     bx	                ;proximo caracter
+	inc  	dl	                ;avanca a coluna
+    loop    pts_jogador
+    ret
+
+
+pts_computador:
+	call    cursor
+    mov     al,[bx+texto_pontos_computador]
+	call    caracter
+    dec     bx	                ;proximo caracter
+	inc  	dl	                ;avanca a coluna
+    loop    pts_computador
+    ret
+
+update_texto_pontos_computador:
+    xor ax,ax
+    mov al,[pontos_computador] 
+
+    add al,30h                       
+    mov [texto_pontos_computador],al
+
+    mov     cx,1			;numero de caracteres
+    mov     bx,0
+    mov     dh,2			;linha 0-29
+    mov     dl,23 			;coluna 0-79
+	mov	   byte[cor],rosa
+
+    call pts_computador
+    jmp volta
+
+display_vel:
+    call    cursor
+    mov     al,[bx+texto_vel_display]
+	call    caracter
+    dec     bx	                ;proximo caracter
+	inc  	dl	                ;avanca a coluna
+    loop display_vel
+    ret
+
+update_veldisp:
+    xor ax,ax
+    mov al,byte[vel_display] 
+    
+    add al,30h                       
+    mov [texto_vel_display],al
+
+    mov     cx,1			;numero de caracteres
+    mov     bx,0
+    mov     dh,2			;linha 0-29
+    mov     dl,53 			;coluna 0-79
+	mov	   byte[cor],rosa
+
+    call display_vel               
+    ret
+
+
+;===============================================================================================================;
 
 l4:
     call    cursor
@@ -943,13 +1032,21 @@ velocidade  dw  10
 vx      dw      1
 vy      dw      1
 
-mens1           db      'Exercicio de Programacao de Sistemas Embarcados 1 2023/2'
-mens2           db      'Antonio Santana 00 x 00 Computador      Velocidade (1/3)'
+title           db      'Exercicio de Programacao de Sistemas Embarcados 1 2023/2'
+stats           db      'Antonio Santana 00 x 00 Computador      Velocidade (1/3)'
 
-vel_display dw 1
+vel_display db 1
+texto_vel_display db '1','$'
 
-topo_barra dw  300
-baixo_barra dw  150
+x_barra dw 600
+topo_barra dw  265
+baixo_barra dw  215
+
+pontos_jogador db 0
+pontos_computador db 0
+
+texto_pontos_jogador db '0','$'
+texto_pontos_computador db '0','$'
 
 ;*************************************************************************
 segment stack stack
