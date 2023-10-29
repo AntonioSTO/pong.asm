@@ -190,7 +190,7 @@ loop volta
 jmp_boost2:
     jmp volta
 
-colisao_barra:
+colisao_barra:      ;funções de colisão abaixo
 
     cmp si, 590
     jl jmp_boost2
@@ -225,17 +225,15 @@ colisao_baixo:
     neg word[vy]  
     jmp volta    
 
-check_com:
+check_com:          ;checa tecla
     mov ah,00h
     int 16h
     
-    ;if it is 'c' or 'C' move up
     cmp al,43h ;'C'
     je PADDLE_UP
     cmp al,63h ;'c'
     je PADDLE_UP
     
-    ;if it is 'b' or 'B' move down
     cmp al,42h ;'B'
     je PADDLE_DOWN
     cmp al,62h ;'b'
@@ -270,7 +268,7 @@ spd2:
 spd:
     jmp speed_down
 
-PADDLE_UP:
+PADDLE_UP:                      ;sobe barra
 
     cmp word[topo_barra],420
     jge jmp_boost
@@ -294,7 +292,7 @@ PADDLE_UP:
 
     jmp volta
 
-PADDLE_DOWN:
+PADDLE_DOWN:                ;desce barra
 
     cmp word[baixo_barra],10
     jle jmp_boost
@@ -364,6 +362,10 @@ speed_down:
     call update_veldisp
 
     jmp volta
+
+;=========================================================;
+;                 Funções Update placar                   ;
+;=========================================================;
 
 update_texto_pontos_jogador_un:
     xor ax,ax
@@ -481,6 +483,12 @@ update_texto_pontos_computador_de:
     mov byte[unidades_computador], 0
     jmp update_texto_pontos_computador_un
     ret
+
+;=========================================================;
+
+;=========================================================;
+;                Update Display Velocidade                ;
+;=========================================================;
 
 display_vel:
     call    cursor
