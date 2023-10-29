@@ -1,6 +1,6 @@
-; vers�o de 10/05/2007
-; corrigido erro de arredondamento na rotina line.
-; circle e full_circle disponibilizados por Jefferson Moro em 10/2009
+; Antônio Sant'Ana de Oliveira
+; Sistemas embarcados 2023/2
+; Engenharia Elétrica
 ;
 segment code
 ..start:
@@ -202,15 +202,15 @@ colisao_barra:
     jl jmp_boost2
 
     neg word[vx]
-    add word[pontos_jogador],1 
-    call update_texto_pontos_jogador
+    add word[unidades_jogador],1 
+    call update_texto_pontos_jogador_un
     
     jmp volta
 
 colisao_direita:
     neg word[vx]
-    add word[pontos_computador],1
-    call update_texto_pontos_computador  
+    add word[unidades_computador],1
+    call update_texto_pontos_computador_un  
     jmp volta   
 
 colisao_cima:
@@ -365,9 +365,12 @@ speed_down:
 
     jmp volta
 
-update_texto_pontos_jogador:
+update_texto_pontos_jogador_un:
     xor ax,ax
-    mov al,[pontos_jogador] 
+    mov al,[unidades_jogador] 
+
+    cmp al,10
+    je update_texto_pontos_jogador_de
     
     add al,30h                       
     mov [texto_pontos_jogador],al
@@ -378,32 +381,64 @@ update_texto_pontos_jogador:
     mov     dl,18 			;coluna 0-79
 	mov	   byte[cor],rosa
 
-    call pts_jogador
+    call un_jogador
     jmp volta
     
 
-pts_jogador:
+un_jogador:
 	call    cursor
     mov     al,[bx+texto_pontos_jogador]
 	call    caracter
     dec     bx	                ;proximo caracter
 	inc  	dl	                ;avanca a coluna
-    loop    pts_jogador
+    loop    un_jogador
     ret
 
+update_texto_pontos_jogador_de:
+    xor ax,ax
+    add byte[dezenas_jogador],1
 
-pts_computador:
+    mov al, [dezenas_jogador]
+
+    add al,30h                       
+    mov [texto_pontos_jogador],al
+
+    mov     cx,1			;numero de caracteres
+    mov     bx,0
+    mov     dh,2			;linha 0-29
+    mov     dl,17 			;coluna 0-79
+	mov	   byte[cor],rosa
+
+    call de_jogador
+    xor ax,ax
+    mov byte[unidades_jogador], 0
+    jmp update_texto_pontos_jogador_un
+    ret
+
+de_jogador:
+    call    cursor
+    mov     al,[bx+texto_pontos_jogador]
+	call    caracter
+    dec     bx	                ;proximo caracter
+	inc  	dl	                ;avanca a coluna
+    loop    de_jogador
+    ret
+
+un_computador:
 	call    cursor
     mov     al,[bx+texto_pontos_computador]
 	call    caracter
     dec     bx	                ;proximo caracter
 	inc  	dl	                ;avanca a coluna
-    loop    pts_computador
+    loop    un_computador
     ret
 
-update_texto_pontos_computador:
+update_texto_pontos_computador_un:
     xor ax,ax
-    mov al,[pontos_computador] 
+    mov al,[unidades_computador]
+
+    cmp al,10
+    je update_texto_pontos_computador_de 
 
     add al,30h                       
     mov [texto_pontos_computador],al
@@ -414,8 +449,38 @@ update_texto_pontos_computador:
     mov     dl,23 			;coluna 0-79
 	mov	   byte[cor],rosa
 
-    call pts_computador
+    call un_computador
     jmp volta
+
+de_computador:
+    call    cursor
+    mov     al,[bx+texto_pontos_computador]
+	call    caracter
+    dec     bx	                ;proximo caracter
+	inc  	dl	                ;avanca a coluna
+    loop    de_computador
+    ret
+
+update_texto_pontos_computador_de:
+    xor ax,ax
+    add byte[dezenas_computador],1
+
+    mov al, [dezenas_computador]
+
+    add al,30h                       
+    mov [texto_pontos_computador],al
+
+    mov     cx,1			;numero de caracteres
+    mov     bx,0
+    mov     dh,2			;linha 0-29
+    mov     dl,22 			;coluna 0-79
+	mov	   byte[cor],rosa
+
+    call de_computador
+    xor ax,ax
+    mov byte[unidades_computador], 0
+    jmp update_texto_pontos_computador_un
+    ret
 
 display_vel:
     call    cursor
@@ -1056,8 +1121,11 @@ x_barra dw 600
 topo_barra dw  265
 baixo_barra dw  215
 
-pontos_jogador db 0
-pontos_computador db 0
+unidades_jogador db 0
+dezenas_jogador db 0
+
+unidades_computador db 0
+dezenas_computador db 0
 
 texto_pontos_jogador db '0','$'
 texto_pontos_computador db '0','$'
